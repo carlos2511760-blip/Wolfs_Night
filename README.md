@@ -39,14 +39,10 @@
 ## ⌨️ Comandos do Jogo
 - **WASD:** Movimentação.
 - **SHIFT:** Correr.
-- **Q:** Stealth (Agachar).
-- **Mouse 1:** Atirar / Usar Item.
+- **Mouse 1:** Atirar
 - **Mouse 2:** Mirar.
-- **T:** Coletar Item.
 - **R:** Recarregar.
-- **Z:** Abrir/Fechar Mochila.
-- **X:** Descartar 1 item (com mochila aberta).
-- **C:** Descartar tudo do slot (com mochila aberta).
+
 
 ---
 *Desenvolvido para ser jogado via Web com deploy no GitHub Pages.*
