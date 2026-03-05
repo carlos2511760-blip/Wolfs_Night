@@ -557,8 +557,7 @@
                 // Chamar Pointer Lock para iniciar o loop do cursor
                 document.getElementById('game-canvas').requestPointerLock();
                 if (window.gameStats && window.gameStats.phase === "pre-game") {
-                    showCentralMessage(`NOITE 1: Se prepare👿`, 5000);
-                    setTimeout(() => { window.gameStats.phase = "prep"; window.clock.start(); }, 2000);
+                    // O loop de animate em game.js já detecta o início e troca de fase
                 }
             }, 500);
         };
