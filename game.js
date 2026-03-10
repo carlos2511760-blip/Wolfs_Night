@@ -79,17 +79,17 @@ window.isPaused = false;
 
 let player = {
     radius: 0.55,
-    isGrounded: true, yaw: 0, pitch: 0, model: null,
-    lives: 3, maxLives: 3, // Evolução de vida máxima
+    isGrounded: true, model: null,
+    lives: 3, maxLives: 3,
     flashlightOn: false, flashlightBattery: 250, flashlight: null,
     traps: 2, medkits: 1,
     magAmmo: 15, totalAmmo: 45, magSize: 15, reloading: false,
     exhaustion: 0, isDead: false, cowardTimer: 0, lastActionTime: 0,
     height: 1.7, canMove: false, yaw: 0, pitch: 0,
     velocity: new THREE.Vector3(0, 0, 0),
-    sensitivity: 0.002, // Sensibilidade padrão
+    sensitivity: 0.002,
     isSprinting: false,
-    shakeIntensity: 0, // Valor inicial do tremor
+    shakeIntensity: 0,
     stamina: 100, maxStamina: 100,
     staminaCooldown: false, coStartTime: 0, cooldownDuration: 1.5
 };
