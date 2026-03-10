@@ -651,7 +651,7 @@ function setupOverlayStyles() {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
             background: radial-gradient(circle, rgba(20,0,0,0.4) 0%, rgba(0,0,0,0.95) 100%); 
             display: none; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 100000; backdrop-filter: blur(15px) grayscale(0.8); 
+            z-index: 999999 !important; backdrop-filter: blur(15px) grayscale(0.8); 
         }
         .pause-box { 
             background: rgba(10, 10, 10, 0.95); padding: 50px; border-left: 10px solid #b30000;
@@ -667,9 +667,11 @@ function setupOverlayStyles() {
         .pause-opt:hover { background: #b30000; transform: scale(1.02); }
         
         #settings-panel, #abilities-panel { 
-            z-index: 100005 !important; 
+            position: relative !important; top: auto !important; left: auto !important; transform: none !important;
+            z-index: 1000005 !important; 
             background: rgba(10,10,10,0.98) !important;
             border-left: 10px solid #b30000 !important;
+            margin: 0 auto;
         }
         #stamina-bar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 400px; height: 15px; background: rgba(0,0,0,0.8); border: 1px solid #333; z-index: 9000; }
         #stamina-fill { width: 100%; height: 100%; background: #b30000; transition: width 0.1s; display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold; }
@@ -693,6 +695,11 @@ function setupOverlayStyles() {
         </div>
     `;
     document.body.appendChild(po);
+    // Mover painéis para dentro do overlay
+    const sp = document.getElementById('settings-panel');
+    const ab = document.getElementById('abilities-panel');
+    if (sp) po.appendChild(sp);
+    if (ab) po.appendChild(ab);
 }
 
 window.togglePause = function () {
@@ -720,14 +727,35 @@ window.togglePause = function () {
     window.updateUI();
 };
 
+window.openAbilities = function () {
+    const card = document.getElementById('pause-main-card');
+    const ab = document.getElementById('abilities-panel');
+    const overlay = document.getElementById('pause-overlay');
+
+    if (card) card.style.display = 'none';
+    if (overlay) overlay.style.display = 'flex';
+    if (ab) {
+        ab.style.display = 'block';
+        if (window.gameStarted) {
+            window.isPaused = true;
+            window.updateUI();
+        }
+    }
+};
+
 window.openPauseSettings = function () {
     const card = document.getElementById('pause-main-card');
     const sp = document.getElementById('settings-panel');
+    const overlay = document.getElementById('pause-overlay');
+
     if (card) card.style.display = 'none';
+    if (overlay) overlay.style.display = 'flex';
     if (sp) {
         sp.style.display = 'block';
-        window.isPaused = true;
-        window.updateUI();
+        if (window.gameStarted) {
+            window.isPaused = true;
+            window.updateUI();
+        }
     }
 };
 
@@ -735,15 +763,23 @@ window.closeSettings = function () {
     const sp = document.getElementById('settings-panel');
     const card = document.getElementById('pause-main-card');
     const overlay = document.getElementById('pause-overlay');
+    const ab = document.getElementById('abilities-panel');
+
     if (sp) sp.style.display = 'none';
+    if (ab) ab.style.display = 'none';
 
     if (window.gameStarted) {
         if (window.isPaused) {
+            // Se o jogo está pausado, volta para o menu principal do pause
             if (card) card.style.display = 'block';
         } else {
+            // Se não está pausado (raro aqui), fecha tudo
             if (overlay) overlay.style.display = 'none';
             document.getElementById('game-canvas').requestPointerLock();
         }
+    } else {
+        // Se estamos no menu inicial
+        if (overlay) overlay.style.display = 'none';
     }
 };
 
@@ -1183,8 +1219,7 @@ function setupControls(canvas) {
             }
             // 2. Fechar habilidades se abertas
             if (ab && ab.style.display === 'block') {
-                ab.style.display = 'none';
-                if (window.gameStarted) window.togglePause();
+                window.closeSettings();
                 return;
             }
             // 3. Alternar pause normal

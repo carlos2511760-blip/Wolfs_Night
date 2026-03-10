@@ -561,17 +561,17 @@
 
         document.getElementById('open-abilities-btn').onclick = () => {
             GameAudio.playUIClick();
-            abilitiesPanel.style.display = 'block';
+            if (window.openAbilities) window.openAbilities();
         };
 
         document.getElementById('close-abilities-btn').onclick = () => {
             GameAudio.playUIClick();
-            abilitiesPanel.style.display = 'none';
+            if (window.closeSettings) window.closeSettings();
         };
 
         document.getElementById('open-settings-btn').onclick = () => {
             GameAudio.playUIClick();
-            settingsPanel.style.display = 'block';
+            if (window.openPauseSettings) window.openPauseSettings();
         };
 
         document.getElementById('close-settings-btn').onclick = () => {
