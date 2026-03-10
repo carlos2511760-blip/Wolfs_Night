@@ -644,15 +644,18 @@ function setupOverlayStyles() {
         #game-stats-display { position: fixed; top: 20px; left: 20px; font-family: 'Arial', sans-serif; font-size: 18px; color: #fff; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border: 1px solid #444; z-index: 9000; min-width: 250px; display: none; }
         #interaction-label { position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 9000; border: 1px solid #b30000; }
         
-        /* Menu de Pause */
-        #pause-menu { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 20000; backdrop-filter: blur(8px); }
-        .pause-card { background: rgba(15, 15, 15, 0.95); padding: 50px; border-radius: 20px; border: 2px solid #b30000; text-align: center; box-shadow: 0 0 50px rgba(0, 0, 0, 1); min-width: 320px; }
-        .pause-title { font-family: 'Creepster', cursive; font-size: 4rem; color: #b30000; margin-bottom: 30px; text-shadow: 0 0 15px rgba(179,0,0,0.5); }
-        .pause-btn { display: block; width: 100%; padding: 15px; margin: 12px 0; background: transparent; border: 1px solid #444; color: white; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; border-radius: 5px; transition: 0.3s; }
-        .pause-btn:hover { background: #b30000; border-color: #b30000; transform: scale(1.03); box-shadow: 0 0 15px rgba(179,0,0,0.4); }
+        /* Menu de Pause e Configurações - Z-INDEX MÁXIMO */
+        #pause-menu { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; backdrop-filter: blur(10px); }
+        .pause-card { background: rgba(10, 10, 10, 0.98); padding: 50px; border-radius: 20px; border: 3px solid #b30000; text-align: center; box-shadow: 0 0 100px rgba(0, 0, 0, 1); min-width: 350px; position: relative; z-index: 100000; }
+        .pause-title { font-family: 'Creepster', cursive; font-size: 4.5rem; color: #b30000; margin-bottom: 40px; text-shadow: 0 0 20px rgba(179,0,0,0.7); }
+        .pause-btn { display: block; width: 100%; padding: 18px; margin: 15px 0; background: rgba(20,20,20,0.8); border: 1px solid #444; color: white; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; border-radius: 8px; transition: 0.3s; }
+        .pause-btn:hover { background: #b30000; border-color: #b30000; transform: scale(1.05); box-shadow: 0 0 20px rgba(179,0,0,0.5); }
         .pause-btn.primary { background: #b30000; border: none; }
         
-        #settings-panel { z-index: 30000 !important; }
+        #settings-panel { z-index: 110000 !important; }
+        #abilities-panel { z-index: 110000 !important; }
+        #main-menu { z-index: 1000 !important; } 
+        #loading-screen { z-index: 999999 !important; pointer-events: none; }
         #backpack-ui { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; padding: 25px; background: rgba(10,10,10,0.95); border: 2px solid #ff0000; border-radius: 15px; display: none; z-index: 11000; color: #fff; text-align: center; font-family: 'Courier New', monospace; box-shadow: 0 0 30px #000; }
         #blood-overlay { 
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
@@ -697,16 +700,18 @@ window.restartNight = function () {
 window.togglePause = function () {
     window.isPaused = !window.isPaused;
     const pm = document.getElementById('pause-menu');
+    const pmCard = document.querySelector('.pause-card');
+    const sp = document.getElementById('settings-panel');
     const canvas = document.getElementById('game-canvas');
 
     if (pm) pm.style.display = window.isPaused ? 'flex' : 'none';
+    if (pmCard) pmCard.style.display = 'block'; // Garante que o card volte a aparecer
 
     // Atualiza a visibilidade do HUD imediatamente
     updateUI();
 
     if (!window.isPaused && canvas) {
-        // Fechar configurações ao despausar
-        document.getElementById('settings-panel').style.display = 'none';
+        if (sp) sp.style.display = 'none';
         canvas.requestPointerLock();
     } else if (window.isPaused) {
         document.exitPointerLock();
@@ -714,8 +719,20 @@ window.togglePause = function () {
 };
 
 window.openPauseSettings = function () {
+    const pmCard = document.querySelector('.pause-card');
+    if (pmCard) pmCard.style.display = 'none';
     const sp = document.getElementById('settings-panel');
-    if (sp) sp.style.display = 'block';
+    if (sp) {
+        sp.style.display = 'block';
+        const closeBtn = document.getElementById('close-settings-btn');
+        if (closeBtn) {
+            const oldClick = closeBtn.onclick;
+            closeBtn.onclick = () => {
+                if (oldClick) oldClick();
+                if (window.isPaused && pmCard) pmCard.style.display = 'block';
+            };
+        }
+    }
 };
 
 // Cachear referências DOM (evita getElementById 60x/s)
@@ -978,31 +995,23 @@ function animate() {
     }
 
     // --- SISTEMA ANTI-FUGA (EXAUSTÃO POR COVARDIA) ---
-    if (gameStats.phase === "survival" && !player.isDead) {
+    if (gameStats.phase === "survival" && !player.isDead && !window.isPaused) {
         let inCabin = false;
-        // Verifica se está dentro ou muito perto de uma cabana (Raio reduzido para 15)
         gameStats.cabins.forEach(c => { if (player.model.position.distanceTo(c.pos) < 15) inCabin = true; });
 
         const seeingWolf = canSeeWolf();
         const recentlyActed = (Date.now() - player.lastActionTime) < 10000;
-        // Proximidade física também conta como "estar no jogo"
         const nearWolf = gameStats.wolves.some(w => player.model.position.distanceTo(w.position) < 40);
         const inEngagement = inCabin ? false : (seeingWolf || recentlyActed || nearWolf);
 
         if (inCabin) {
-            // SE TRANCAR NA CABANA: Acelera exaustão (Não pode se esconder pra sempre)
             player.cowardTimer += d * 1.5;
         } else if (!inEngagement) {
-            // FUGIR OU SE ESCONDER: Se não estiver vendo lobos nem agindo, o cansaço aumenta
-            // Se estiver correndo (Sprint), aumenta mais rápido que andando
             player.cowardTimer += player.isSprinting ? d : d * 0.5;
         } else {
-            // EM COMBATE / PERIGO: Recupera da fadiga, mas BEM MAIS DEVAGAR
-            // Antes era d * 4 (muito fácil resetar), agora é d * 0.8
             player.cowardTimer = Math.max(0, player.cowardTimer - d * 0.8);
         }
 
-        // Escalar exaustão baseada no limite de 120 segundos (2 minutos)
         player.exhaustion = (player.cowardTimer / 120) * 100;
 
         if (player.cowardTimer >= 120) {
@@ -1010,20 +1019,8 @@ function animate() {
             triggerExhaustionDeath();
         }
     }
-}
 
-updateDoors(d);
-updateBloods();
-updateUI();
-
-if (player.flashlightModel) {
-    player.flashlightModel.visible = player.flashlightOn;
-    const time = clock.getElapsedTime();
-    player.flashlightModel.position.y = -0.35 + Math.sin(time * 2) * 0.005;
-    player.flashlightModel.rotation.z = Math.sin(time) * 0.02;
-}
-
-renderer.render(scene, camera);
+    renderer.render(scene, camera);
 }
 
 function toggleInventory() {
@@ -1202,6 +1199,19 @@ function setupFlashlight() {
 function setupControls(canvas) {
     window.addEventListener('keydown', e => {
         if (e.code === 'Escape') {
+            const sp = document.getElementById('settings-panel');
+            const ab = document.getElementById('abilities-panel');
+            // Se algum painel estiver aberto, fecha ele primeiro antes de despausar
+            if (sp && sp.style.display === 'block') {
+                sp.style.display = 'none';
+                const pmCard = document.querySelector('.pause-card');
+                if (window.isPaused && pmCard) pmCard.style.display = 'block';
+                return;
+            }
+            if (ab && ab.style.display === 'block') {
+                ab.style.display = 'none';
+                return;
+            }
             togglePause();
             return;
         }
@@ -1247,8 +1257,9 @@ function setupControls(canvas) {
         player.canMove = (document.pointerLockElement === canvas);
         const ls = document.getElementById('loading-screen');
         if (ls) {
-            // Só mostra a tela de carregamento se o jogo NÃO começou
-            ls.style.display = (!window.gameStarted) ? 'flex' : 'none';
+            // Esconder tela de carregamento se o jogo começou
+            ls.style.display = (window.gameStarted) ? 'none' : 'flex';
+            if (window.gameStarted) ls.style.visibility = 'hidden';
         }
 
         // Se perdeu o lock e a mochila não está aberta, pausa a mira
