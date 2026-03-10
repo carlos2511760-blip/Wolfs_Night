@@ -70,11 +70,12 @@ function addToGrid(obj) {
     collisionGrid.get(key).push(obj);
 }
 
-let config = { isTopDown: false, cameraHeight: 25 };
+let config = { cameraHeight: 25 };
 window.config = config;
 window.cheatsEnabled = false;
 window.isFullBright = false;
 window.isFlying = false;
+window.isPaused = false;
 
 let player = {
     radius: 0.55,
@@ -138,6 +139,12 @@ function createProceduralTexture(type) {
             ctx.fillStyle = `rgb(${c},${c},${c + 5})`;
             ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
         }
+    } else if (type === 'ammo_side') {
+        ctx.fillStyle = '#1a2a1a'; ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 10;
+        ctx.strokeRect(10, 10, 236, 236);
+        ctx.fillStyle = '#aa8822'; ctx.font = 'bold 40px Arial';
+        ctx.fillText('AMMO 7.62', 30, 140);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -151,9 +158,9 @@ function initTextures() {
     gameMaterials.treeTrunk = new THREE.MeshStandardMaterial({ map: createProceduralTexture('wood'), roughness: 1.0 });
     gameMaterials.wolfSkin = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
     gameMaterials.gun = new THREE.MeshStandardMaterial({ map: createProceduralTexture('metal'), metalness: 0.7, roughness: 0.2 });
-    gameMaterials.medkit = new THREE.MeshStandardMaterial({ color: 0x22aa22 });
-    gameMaterials.ammo = new THREE.MeshStandardMaterial({ color: 0xaa8822 });
-    gameMaterials.trap = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.5 });
+    gameMaterials.medkit = new THREE.MeshStandardMaterial({ color: 0xaa2222, roughness: 0.4, metalness: 0.3 }); // Changed to RED and improved
+    gameMaterials.ammo = new THREE.MeshStandardMaterial({ color: 0xaa8822, roughness: 0.3, metalness: 0.6 }); // Metallic ammo
+    gameMaterials.trap = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 }); // Darker, metallic trap
     gameMaterials.flashlight = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8 });
 
     // Tentar carregar arquivos externos (sobrescreve o procedural se funcionar)
@@ -385,11 +392,65 @@ function createCabin(x, y, z) {
         if (r < 0.35) { lootType = "trap"; amount = 3; }
         else if (r < 0.55) { lootType = "medkit"; amount = 1; }
 
-        let lootMat = gameMaterials.ammo;
-        if (lootType === "trap") lootMat = gameMaterials.trap;
-        else if (lootType === "medkit") lootMat = gameMaterials.medkit;
+        // Hitbox invisível pra o raycast detectar
+        const loot = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshBasicMaterial({ visible: false }));
 
-        const loot = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), lootMat);
+        if (lootType === "ammo") {
+            // Caixa de munição detalhada
+            const ammoBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.45, 0.55), gameMaterials.ammo);
+            ammoBox.position.y = -0.3;
+
+            // Tampa com travas
+            const lid = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.1, 0.57), new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8 }));
+            lid.position.y = 0.23;
+            ammoBox.add(lid);
+
+            // Alça superior
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+            handle.position.y = 0.29;
+            ammoBox.add(handle);
+
+            loot.add(ammoBox);
+        }
+        else if (lootType === "medkit") {
+            // Maleta médica robusta
+            const medBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.4), gameMaterials.medkit);
+            medBox.position.y = -0.3;
+
+            // Cruz branca detalhada em relevo
+            const crossMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const vPart = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.02), crossMat);
+            vPart.position.z = 0.21;
+            const hPart = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.02), crossMat);
+            hPart.position.z = 0.21;
+            medBox.add(vPart, hPart);
+
+            // Alça da maleta
+            const handle = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 8, 12, Math.PI), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+            handle.position.y = 0.3;
+            medBox.add(handle);
+
+            loot.add(medBox);
+        }
+        else if (lootType === "trap") {
+            // Armadilha de urso intimidadora
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.1, 24), gameMaterials.trap);
+            base.position.y = -0.55;
+
+            const trigger = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 }));
+            trigger.position.y = 0.06;
+            base.add(trigger);
+
+            // Muitos dentes afiados
+            for (let teeth = 0; teeth < 12; teeth++) {
+                const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.35, 4), gameMaterials.trap);
+                const angle = (teeth / 12) * Math.PI * 2;
+                tooth.position.set(Math.cos(angle) * 0.5, 0.15, Math.sin(angle) * 0.5);
+                tooth.rotation.x = Math.PI / 12; // Leve inclinação para dentro
+                base.add(tooth);
+            }
+            loot.add(base);
+        }
 
         const pos = lootPositions[i];
         loot.position.set(pos.x, 0.6, pos.z);
@@ -580,8 +641,18 @@ function setupOverlayStyles() {
     s.innerHTML = `
         #central-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Creepster', cursive; font-size: 60px; color: #ff0000; text-shadow: 0 0 20px #000; opacity: 1; transition: opacity 5s ease-out; pointer-events: none; z-index: 10000; text-align: center; }
         #top-timer { position: fixed; top: 20px; right: 20px; font-family: 'Courier New', monospace; font-size: 24px; color: #ff3333; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 5px; border-left: 5px solid #ff0000; z-index: 9000; }
-        #game-stats-display { position: fixed; top: 20px; left: 20px; font-family: 'Arial', sans-serif; font-size: 18px; color: #fff; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border: 1px solid #444; z-index: 9000; min-width: 250px; }
+        #game-stats-display { position: fixed; top: 20px; left: 20px; font-family: 'Arial', sans-serif; font-size: 18px; color: #fff; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border: 1px solid #444; z-index: 9000; min-width: 250px; display: none; }
         #interaction-label { position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 9000; border: 1px solid #b30000; }
+        
+        /* Menu de Pause */
+        #pause-menu { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 20000; backdrop-filter: blur(8px); }
+        .pause-card { background: rgba(15, 15, 15, 0.95); padding: 50px; border-radius: 20px; border: 2px solid #b30000; text-align: center; box-shadow: 0 0 50px rgba(0, 0, 0, 1); min-width: 320px; }
+        .pause-title { font-family: 'Creepster', cursive; font-size: 4rem; color: #b30000; margin-bottom: 30px; text-shadow: 0 0 15px rgba(179,0,0,0.5); }
+        .pause-btn { display: block; width: 100%; padding: 15px; margin: 12px 0; background: transparent; border: 1px solid #444; color: white; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; border-radius: 5px; transition: 0.3s; }
+        .pause-btn:hover { background: #b30000; border-color: #b30000; transform: scale(1.03); box-shadow: 0 0 15px rgba(179,0,0,0.4); }
+        .pause-btn.primary { background: #b30000; border: none; }
+        
+        #settings-panel { z-index: 30000 !important; }
         #backpack-ui { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; padding: 25px; background: rgba(10,10,10,0.95); border: 2px solid #ff0000; border-radius: 15px; display: none; z-index: 11000; color: #fff; text-align: center; font-family: 'Courier New', monospace; box-shadow: 0 0 30px #000; }
         #blood-overlay { 
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
@@ -599,7 +670,53 @@ function setupOverlayStyles() {
     const g = document.createElement('div'); g.id = 'game-stats-display'; document.body.appendChild(g);
     const i = document.createElement('div'); i.id = 'interaction-label'; document.body.appendChild(i);
     const p = document.createElement('div'); p.id = 'backpack-ui'; document.body.appendChild(p);
+    const pause = document.createElement('div'); pause.id = 'pause-menu';
+    pause.innerHTML = `
+        <div class="pause-card">
+            <div class="pause-title">PAUSADO</div>
+            <button class="pause-btn primary" onclick="togglePause()">CONTINUAR</button>
+            <button class="pause-btn" onclick="openPauseSettings()">CONFIGURAÇÕES</button>
+            <button class="pause-btn" onclick="restartNight()">REINICIAR NOITE</button>
+            <button class="pause-btn" onclick="location.reload()">VOLTAR AO MENU</button>
+        </div>
+    `;
+    document.body.appendChild(pause);
 }
+
+window.restartNight = function () {
+    // Lógica para reiniciar a noite atual
+    if (confirm("Deseja reiniciar a noite atual?")) {
+        window.isPaused = false;
+        document.getElementById('pause-menu').style.display = 'none';
+        resetPlayerStatus(true);
+        // Recriar o cenário ou apenas reposicionar? reload é mais seguro para "resetar" tudo limpo
+        location.reload();
+    }
+};
+
+window.togglePause = function () {
+    window.isPaused = !window.isPaused;
+    const pm = document.getElementById('pause-menu');
+    const canvas = document.getElementById('game-canvas');
+
+    if (pm) pm.style.display = window.isPaused ? 'flex' : 'none';
+
+    // Atualiza a visibilidade do HUD imediatamente
+    updateUI();
+
+    if (!window.isPaused && canvas) {
+        // Fechar configurações ao despausar
+        document.getElementById('settings-panel').style.display = 'none';
+        canvas.requestPointerLock();
+    } else if (window.isPaused) {
+        document.exitPointerLock();
+    }
+};
+
+window.openPauseSettings = function () {
+    const sp = document.getElementById('settings-panel');
+    if (sp) sp.style.display = 'block';
+};
 
 // Cachear referências DOM (evita getElementById 60x/s)
 let _uiTimer, _uiStamina, _uiStats, _uiInteraction, _uiBlood;
@@ -612,10 +729,19 @@ function cacheUIElements() {
 }
 
 function updateUI() {
-    // Atualizar UI pesada a cada 5 frames (ainda 12x/s — suave o suficiente)
-    if (_frameCount % 5 !== 0) return;
+    // Esconder HUD se não começou, se está pausado ou no menu
+    const isVisible = window.gameStarted && !window.isPaused && gameStats.phase !== "pre-game";
 
     if (!_uiTimer) cacheUIElements();
+
+    // Atualizar visibilidade
+    const hudContainer = [_uiTimer, _uiStamina?.parentElement, _uiStats, document.getElementById('crosshair')];
+    hudContainer.forEach(el => { if (el) el.style.display = isVisible ? 'block' : 'none'; });
+
+    if (!isVisible) return;
+
+    // Atualizar UI pesada a cada 5 frames
+    if (_frameCount % 5 !== 0) return;
 
     if (_uiTimer) {
         let t = 0; let label = "";
@@ -657,9 +783,13 @@ function updateUI() {
         if (hits.length > 0 && hits[0].distance < 7) {
             let name = "OBJETO";
             const o = hits[0].object;
-            if (o.userData.type === 'loot') name = (o.userData.subType === 'ammo' ? "MUNIÇÃO" : "ARMADILHA");
-            else if (o.parent && o.parent.userData && o.parent.userData.type === 'door') name = "PORTA";
-            _uiInteraction.innerText = `PRESSIONE BOTÃO ESQUERDO PARA: ${name}`;
+            if (o.userData.type === 'loot') {
+                if (o.userData.subType === 'ammo') name = "CAIXA DE MUNIÇÃO";
+                else if (o.userData.subType === 'trap') name = "ARMADILHA DE URSO";
+                else if (o.userData.subType === 'medkit') name = "MALETA MÉDICA";
+            }
+            else if (o.parent && o.parent.userData && o.parent.userData.type === 'door') name = "PORTA DE MADEIRA";
+            _uiInteraction.innerText = `[CLIQUE] COLETAR/USAR: ${name}`;
             _uiInteraction.style.opacity = "1";
         } else { _uiInteraction.style.opacity = "0"; }
     }
@@ -730,8 +860,12 @@ function handleMovement(delta) {
     if (player.isAiming) baseSpeed *= 0.5; // Lento ao mirar
     const finalSpeed = (player.isSlowed ? baseSpeed * 0.4 : baseSpeed) * delta;
     const moveDir = new THREE.Vector3();
-    if (config.isTopDown) { if (keys['KeyW']) moveDir.z -= 1; if (keys['KeyS']) moveDir.z += 1; if (keys['KeyA']) moveDir.x -= 1; if (keys['KeyD']) moveDir.x += 1; }
-    else { const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw); const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw); if (keys['KeyW']) moveDir.add(forward); if (keys['KeyS']) moveDir.sub(forward); if (keys['KeyA']) moveDir.sub(right); if (keys['KeyD']) moveDir.add(right); }
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+    const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+    if (keys['KeyW']) moveDir.add(forward);
+    if (keys['KeyS']) moveDir.sub(forward);
+    if (keys['KeyA']) moveDir.sub(right);
+    if (keys['KeyD']) moveDir.add(right);
     if (moveDir.length() > 0) {
         moveDir.normalize();
         const subSteps = 6;
@@ -763,160 +897,133 @@ function animate() {
     _frameCount++;
     const d = clock.getDelta();
 
-    // --- LÓGICA DE CLIMA E FASES ---
+    // Lógica compartilhada (clima e câmera) mesmo em pause para evitar "congelamentos" estranhos
     if (!window.gameStarted) {
         updateAtmosphere(0);
-        updatePlayer(d); // Manter a câmera posicionada no menu
+        updatePlayer(d);
         renderer.render(scene, camera);
         return;
     }
 
-    if (gameStats.phase === "pre-game") {
-        updateAtmosphere(0);
-        gameStats.phase = "prep";
-        clock.start();
-        showCentralMessage(`NOITE ${gameStats.night}: Se prepare👿`, 5000);
-    }
-    else if (gameStats.phase === "prep") {
-        gameStats.prepTimer -= d;
-        let p = 1 - (gameStats.prepTimer / 180);
-        updateAtmosphere(p);
-        if (gameStats.prepTimer <= 0) {
-            gameStats.phase = "transition";
-            showCentralMessage("SOBREVIVA", 5000);
-            setTimeout(() => {
-                gameStats.phase = "survival";
-                const numWolves = 12 + (gameStats.night * 2);
-                for (let i = 0; i < numWolves; i++) spawnWolf();
-                if (gameStats.night === 7) spawnWolf(true); // SPAWN ALFA
-            }, 5000);
+    // Só processa as fases e física se NÃO estiver pausado
+    if (!window.isPaused) {
+        if (gameStats.phase === "pre-game") {
+            updateAtmosphere(0);
+            gameStats.phase = "prep";
+            clock.start();
+            showCentralMessage(`NOITE ${gameStats.night}: Se prepare👿`, 5000);
         }
-    }
-    else if (gameStats.phase === "survival") {
-        // --- UIVO DE ALERTA ---
-        if (player.isSprinting && (Date.now() - lastHowlTime) > 15000) {
-            showCentralMessage("AUUUUUUU! 🐺 (ELES TE OUVIRAM!)", 3000);
-            GameAudio.playHowl();
-            lastHowlTime = Date.now();
-            gameStats.wolves.forEach(w => w.userData.speed *= 1.5);
-            setTimeout(() => gameStats.wolves.forEach(w => w.userData.speed /= 1.5), 5000);
-        }
-        gameStats.survivalTimer -= d;
-        updateAtmosphere(1);
-        if (player.canMove) handleWolves(d, Date.now());
-        if (gameStats.survivalTimer <= 0 || gameStats.wolves.length === 0) {
-            if (gameStats.night < 7) {
-                gameStats.night++;
-                resetPlayerStatus(true); // Cura e aumenta vida máxima
-                gameStats.phase = "pre-game";
-                gameStats.prepTimer = 180;
-                gameStats.survivalTimer = 600;
-                // Limpar lobos antigos
-                gameStats.wolves.forEach(w => scene.remove(w));
-                gameStats.wolves = [];
-                showCentralMessage(`NOITE ${gameStats.night - 1} SOBREVIVIDA! ✨ NOVA VIDA MÁXIMA ALCANÇADA!`, 5000);
-            } else {
-                gameStats.phase = "ended";
-                showCentralMessage("VOCÊ SOBREVIVEU ÀS 7 NOITES! 🏆", 15000);
+        else if (gameStats.phase === "prep") {
+            gameStats.prepTimer -= d;
+            let p = 1 - (gameStats.prepTimer / 180);
+            updateAtmosphere(p);
+            if (gameStats.prepTimer <= 0) {
+                gameStats.phase = "transition";
+                showCentralMessage("SOBREVIVA", 5000);
+                setTimeout(() => {
+                    gameStats.phase = "survival";
+                    const numWolves = 12 + (gameStats.night * 2);
+                    for (let i = 0; i < numWolves; i++) spawnWolf();
+                    if (gameStats.night === 7) spawnWolf(true);
+                }, 5000);
             }
         }
-    }
+        else if (gameStats.phase === "survival") {
+            if (player.isSprinting && (Date.now() - lastHowlTime) > 15000) {
+                showCentralMessage("AUUUUUUU! 🐺 (ELES TE OUVIRAM!)", 3000);
+                GameAudio.playHowl();
+                lastHowlTime = Date.now();
+                gameStats.wolves.forEach(w => w.userData.speed *= 1.5);
+                setTimeout(() => gameStats.wolves.forEach(w => w.userData.speed /= 1.5), 5000);
+            }
+            gameStats.survivalTimer -= d;
+            updateAtmosphere(1);
+            if (player.canMove) handleWolves(d, Date.now());
+            if (gameStats.survivalTimer <= 0 || gameStats.wolves.length === 0) {
+                if (gameStats.night < 7) {
+                    gameStats.night++;
+                    resetPlayerStatus(true);
+                    gameStats.phase = "pre-game";
+                    gameStats.prepTimer = 180;
+                    gameStats.survivalTimer = 600;
+                    gameStats.wolves.forEach(w => scene.remove(w));
+                    gameStats.wolves = [];
+                    showCentralMessage(`NOITE ${gameStats.night - 1} SOBREVIVIDA! ✨ NOVA VIDA MÁXIMA ALCANÇADA!`, 5000);
+                } else {
+                    gameStats.phase = "ended";
+                    showCentralMessage("VOCÊ SOBREVIVEU ÀS 7 NOITES! 🏆", 15000);
+                }
+            }
+        }
 
-    updatePlayer(d); // Sempre atualizar a câmera para evitar que ela fique presa no chão (y=0)
-    if (player.canMove) {
-        handleMovement(d);
         handlePhysics(d);
-
-        // Batimento Cardíaco baseado no Medo
-        if (player.shakeIntensity > 0.01 && Math.random() < 0.02) {
-            GameAudio.playHeartbeat();
-        }
-
-        // Tremor por Medo
-        if (player.shakeIntensity > 0.01) {
-            camera.rotation.x += (Math.random() - 0.5) * player.shakeIntensity;
-            camera.rotation.y += (Math.random() - 0.5) * player.shakeIntensity;
-            player.shakeIntensity *= 0.95; // Reduz gradualmente
-        }
-
-        // Timers de status
-        if (player.paralysisTimer > 0) {
-            player.paralysisTimer -= d;
-            if (player.paralysisTimer <= 0) player.isParalyzed = false;
-        }
-        if (player.slowTimer > 0) {
-            player.slowTimer -= d;
-            if (player.slowTimer <= 0) player.isSlowed = false;
-        }
-        if (player.damageImmunityTimer > 0) {
+        handleMovement(d);
+        updatePlayer(d);
+        player.shakeIntensity *= 0.9;
+        if (player.isDamageImmune) {
             player.damageImmunityTimer -= d;
             if (player.damageImmunityTimer <= 0) player.isDamageImmune = false;
         }
-
-        // --- SUAVIZAR RECUO DA ARMA E BALANÇO (BOB) ---
-        if (player.weaponModel) {
-            // Bobbing da arma ao andar/correr
-            const bobMult = player.isSprinting ? 1.8 : 1.0;
-            const bobSpeed = player.isSprinting ? 8 : 4;
-            const time = clock.getElapsedTime() * bobSpeed;
-
-            const bobX = Math.cos(time) * 0.02 * bobMult;
-            const bobY = Math.sin(time * 2) * 0.02 * bobMult;
-
-            player.weaponModel.position.x = THREE.MathUtils.lerp(player.weaponModel.position.x, 0.4 + bobX, 0.15);
-            player.weaponModel.position.y = THREE.MathUtils.lerp(player.weaponModel.position.y, -0.4 + bobY, 0.15);
-            player.weaponModel.position.z = THREE.MathUtils.lerp(player.weaponModel.position.z, -0.6, 0.15);
-        }
-
-        // --- SISTEMA ANTI-FUGA (EXAUSTÃO POR COVARDIA) ---
-        if (gameStats.phase === "survival" && !player.isDead) {
-            let inCabin = false;
-            // Verifica se está dentro ou muito perto de uma cabana (Raio reduzido para 15)
-            gameStats.cabins.forEach(c => { if (player.model.position.distanceTo(c.pos) < 15) inCabin = true; });
-
-            const seeingWolf = canSeeWolf();
-            const recentlyActed = (Date.now() - player.lastActionTime) < 10000;
-            // Proximidade física também conta como "estar no jogo"
-            const nearWolf = gameStats.wolves.some(w => player.model.position.distanceTo(w.position) < 40);
-            const inEngagement = inCabin ? false : (seeingWolf || recentlyActed || nearWolf);
-
-            if (inCabin) {
-                // SE TRANCAR NA CABANA: Acelera exaustão (Não pode se esconder pra sempre)
-                player.cowardTimer += d * 1.5;
-            } else if (!inEngagement) {
-                // FUGIR OU SE ESCONDER: Se não estiver vendo lobos nem agindo, o cansaço aumenta
-                // Se estiver correndo (Sprint), aumenta mais rápido que andando
-                player.cowardTimer += player.isSprinting ? d : d * 0.5;
-            } else {
-                // EM COMBATE / PERIGO: Recupera da fadiga, mas BEM MAIS DEVAGAR
-                // Antes era d * 4 (muito fácil resetar), agora é d * 0.8
-                player.cowardTimer = Math.max(0, player.cowardTimer - d * 0.8);
-            }
-
-            // Escalar exaustão baseada no limite de 120 segundos (2 minutos)
-            player.exhaustion = (player.cowardTimer / 120) * 100;
-
-            if (player.cowardTimer >= 120) {
-                player.isDead = true;
-                triggerExhaustionDeath();
-            }
-        }
     }
 
-    updateDoors(d); // Animar as portas suavemente
+    updateDoors(d);
     updateBloods();
     updateUI();
 
-    // Atualizar posição da lanterna visual
     if (player.flashlightModel) {
         player.flashlightModel.visible = player.flashlightOn;
-        // Balanço leve na lanterna
         const time = clock.getElapsedTime();
         player.flashlightModel.position.y = -0.35 + Math.sin(time * 2) * 0.005;
         player.flashlightModel.rotation.z = Math.sin(time) * 0.02;
     }
 
-    renderer.render(scene, camera);
+    // --- SISTEMA ANTI-FUGA (EXAUSTÃO POR COVARDIA) ---
+    if (gameStats.phase === "survival" && !player.isDead) {
+        let inCabin = false;
+        // Verifica se está dentro ou muito perto de uma cabana (Raio reduzido para 15)
+        gameStats.cabins.forEach(c => { if (player.model.position.distanceTo(c.pos) < 15) inCabin = true; });
+
+        const seeingWolf = canSeeWolf();
+        const recentlyActed = (Date.now() - player.lastActionTime) < 10000;
+        // Proximidade física também conta como "estar no jogo"
+        const nearWolf = gameStats.wolves.some(w => player.model.position.distanceTo(w.position) < 40);
+        const inEngagement = inCabin ? false : (seeingWolf || recentlyActed || nearWolf);
+
+        if (inCabin) {
+            // SE TRANCAR NA CABANA: Acelera exaustão (Não pode se esconder pra sempre)
+            player.cowardTimer += d * 1.5;
+        } else if (!inEngagement) {
+            // FUGIR OU SE ESCONDER: Se não estiver vendo lobos nem agindo, o cansaço aumenta
+            // Se estiver correndo (Sprint), aumenta mais rápido que andando
+            player.cowardTimer += player.isSprinting ? d : d * 0.5;
+        } else {
+            // EM COMBATE / PERIGO: Recupera da fadiga, mas BEM MAIS DEVAGAR
+            // Antes era d * 4 (muito fácil resetar), agora é d * 0.8
+            player.cowardTimer = Math.max(0, player.cowardTimer - d * 0.8);
+        }
+
+        // Escalar exaustão baseada no limite de 120 segundos (2 minutos)
+        player.exhaustion = (player.cowardTimer / 120) * 100;
+
+        if (player.cowardTimer >= 120) {
+            player.isDead = true;
+            triggerExhaustionDeath();
+        }
+    }
+}
+
+updateDoors(d);
+updateBloods();
+updateUI();
+
+if (player.flashlightModel) {
+    player.flashlightModel.visible = player.flashlightOn;
+    const time = clock.getElapsedTime();
+    player.flashlightModel.position.y = -0.35 + Math.sin(time * 2) * 0.005;
+    player.flashlightModel.rotation.z = Math.sin(time) * 0.02;
+}
+
+renderer.render(scene, camera);
 }
 
 function toggleInventory() {
@@ -1094,8 +1201,13 @@ function setupFlashlight() {
 }
 function setupControls(canvas) {
     window.addEventListener('keydown', e => {
+        if (e.code === 'Escape') {
+            togglePause();
+            return;
+        }
+        if (window.isPaused) return;
+
         keys[e.code] = true;
-        if (e.code === 'KeyF') config.isTopDown = !config.isTopDown;
         if (e.code === 'KeyL') {
             if (player.flashlightBattery > 0) {
                 player.flashlightOn = !player.flashlightOn;
@@ -1134,7 +1246,10 @@ function setupControls(canvas) {
     document.addEventListener('pointerlockchange', () => {
         player.canMove = (document.pointerLockElement === canvas);
         const ls = document.getElementById('loading-screen');
-        if (ls) ls.style.display = player.canMove ? 'none' : 'flex';
+        if (ls) {
+            // Só mostra a tela de carregamento se o jogo NÃO começou
+            ls.style.display = (!window.gameStarted) ? 'flex' : 'none';
+        }
 
         // Se perdeu o lock e a mochila não está aberta, pausa a mira
         if (!player.canMove && !player.inventoryOpen) {

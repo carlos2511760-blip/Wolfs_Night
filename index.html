@@ -501,9 +501,8 @@
             <span>Volume Geral</span>
             <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
         </div>
-        <div class="setting-row">
-            <span>Modo Top-Down (F)</span>
-            <input type="checkbox" id="topdown-toggle">
+        <div style="margin-top:20px; text-align:center; color:#888; font-size:0.9rem;">
+            Pressione <b>ESC</b> ou <b>P</b> para Pausar durante o jogo
         </div>
         <div class="setting-row">
             <span style="color: #ffcc00;">Habilitar Cheats (N/P)</span>
@@ -583,7 +582,6 @@
             // Salvar configurações globais no objeto player do game.js
             if (window.player) {
                 player.sensitivity = parseFloat(document.getElementById('sensitivity-slider').value);
-                config.isTopDown = document.getElementById('topdown-toggle').checked;
                 window.cheatsEnabled = document.getElementById('cheats-toggle').checked;
                 GameAudio.masterVolume = parseFloat(document.getElementById('volume-slider').value);
             }
