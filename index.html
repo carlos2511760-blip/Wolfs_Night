@@ -584,19 +584,12 @@
 
         document.getElementById('close-settings-btn').onclick = () => {
             GameAudio.playUIClick();
-            settingsPanel.style.display = 'none';
-
-            // Se estivermos pausados, volta para o menu de pause
-            const pmCard = document.querySelector('.pause-card');
-            if (window.isPaused && pmCard) {
-                pmCard.style.display = 'block';
-            } else if (!window.gameStarted) {
-                // Se não começou o jogo, apenas fecha (comportamento do menu inicial)
+            if (window.closeSettings) {
+                closeSettings();
             } else {
-                // Caso genérico: se despausou por algum motivo, volta o lock
-                document.getElementById('game-canvas').requestPointerLock();
+                settingsPanel.style.display = 'none';
             }
-
+            // Manter atualização de variáveis globais
             if (window.player) {
                 player.sensitivity = parseFloat(document.getElementById('sensitivity-slider').value);
                 window.cheatsEnabled = document.getElementById('cheats-toggle').checked;

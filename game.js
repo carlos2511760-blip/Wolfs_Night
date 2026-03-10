@@ -70,12 +70,15 @@ function addToGrid(obj) {
     collisionGrid.get(key).push(obj);
 }
 
-let config = { cameraHeight: 25 };
-window.config = config;
+// --- ESTADOS GLOBAIS DE MOTOR ---
+window.gameStarted = false;
+window.isPaused = false;
 window.cheatsEnabled = false;
 window.isFullBright = false;
 window.isFlying = false;
-window.isPaused = false;
+
+let config = { cameraHeight: 25 };
+window.config = config;
 
 let player = {
     radius: 0.55,
@@ -718,13 +721,17 @@ window.restartNight = function () {
 };
 
 window.togglePause = function () {
+    if (!window.gameStarted) return;
+
+    // Inverte o estado
+    window.isPaused = !window.isPaused;
+
+    // Sincroniza elementos DOM
     const pm = document.getElementById('pause-menu');
     const pmCard = pm?.querySelector('.pause-card');
     const sp = document.getElementById('settings-panel');
     const ab = document.getElementById('abilities-panel');
     const canvas = document.getElementById('game-canvas');
-
-    window.isPaused = !window.isPaused;
 
     if (window.isPaused) {
         if (pm) pm.style.display = 'flex';
@@ -736,10 +743,11 @@ window.togglePause = function () {
         if (pm) pm.style.display = 'none';
         if (sp) sp.style.display = 'none';
         if (ab) ab.style.display = 'none';
-        if (canvas && window.gameStarted) canvas.requestPointerLock();
+        if (canvas) canvas.requestPointerLock();
     }
 
-    updateUI();
+    // Forçar atualização do HUD
+    if (typeof updateUI === 'function') updateUI();
 };
 
 window.openPauseSettings = function () {
@@ -748,8 +756,26 @@ window.openPauseSettings = function () {
     if (pmCard) pmCard.style.display = 'none';
     if (sp) {
         sp.style.display = 'block';
-        window.isPaused = true;
-        updateUI();
+        if (window.gameStarted) {
+            window.isPaused = true;
+            updateUI();
+        }
+    }
+};
+
+window.closeSettings = function () {
+    const sp = document.getElementById('settings-panel');
+    const pmCard = document.querySelector('.pause-card');
+    if (sp) sp.style.display = 'none';
+
+    // Se o jogo está rolando e pausado, volta pro card do pause
+    if (window.gameStarted && window.isPaused) {
+        if (pmCard) pmCard.style.display = 'block';
+    }
+    // Se fechou pelo menu inicial ou se de alguma forma despausou, volta o lock
+    else if (window.gameStarted && !window.isPaused) {
+        const canvas = document.getElementById('game-canvas');
+        if (canvas) canvas.requestPointerLock();
     }
 };
 
@@ -1216,26 +1242,23 @@ function setupFlashlight() {
 }
 function setupControls(canvas) {
     window.addEventListener('keydown', e => {
-        if (e.code === 'Escape') {
+        if (e.code === 'Escape' || e.code === 'KeyP') {
             const sp = document.getElementById('settings-panel');
             const ab = document.getElementById('abilities-panel');
-            const pmCard = document.querySelector('.pause-card');
 
-            // Ordem de prioridade: fechar painéis internos primeiro
+            // 1. Fechar configurações se abertas
             if (sp && sp.style.display === 'block') {
-                sp.style.display = 'none';
-                if (pmCard) pmCard.style.display = 'block';
+                window.closeSettings();
                 return;
             }
+            // 2. Fechar habilidades se abertas
             if (ab && ab.style.display === 'block') {
                 ab.style.display = 'none';
-                if (window.isPaused && pmCard) pmCard.style.display = 'block';
-                else if (!window.gameStarted) { /* nada no menu inicial */ }
-                else togglePause();
+                if (window.gameStarted) window.togglePause();
                 return;
             }
-
-            togglePause();
+            // 3. Alternar pause normal
+            if (window.gameStarted) window.togglePause();
             return;
         }
         if (window.isPaused) return;
@@ -1248,8 +1271,8 @@ function setupControls(canvas) {
             }
         }
         if (e.code === 'KeyN' && window.cheatsEnabled) skipNight();
-        if (e.code === 'KeyP' && window.cheatsEnabled) {
-            player.totalAmmo += 100; player.medkits += 5; player.traps += 10; player.lives = 3;
+        if (e.code === 'KeyO' && window.cheatsEnabled) { // Mudei P para O para não conflitar com Pause
+            player.totalAmmo += 100; player.medkits += 5; player.traps += 10; player.lives = player.maxLives;
             showCheatMessage("SUPRIMENTOS E VIDA RECEBIDOS! 📦❤️");
             GameAudio.playUIClick();
         }
