@@ -524,14 +524,6 @@
         </div>
     </section>
 
-    <div id="game-hud"
-        style="position: fixed; top: 20px; left: 20px; z-index: 1000; background: var(--glass-bg); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border); backdrop-filter: blur(5px); display: none;">
-        <div style="margin-bottom: 10px;">❤️ Vida: <span id="health-val">3/3</span></div>
-        <div>🏃 Stamina</div>
-        <div class="status-bar" style="width: 150px; height: 10px;">
-            <div id="stamina-fill" class="status-fill" style="width: 100%;"></div>
-        </div>
-    </div>
 
     <footer>
         <p>&copy; 2026 Seven Nights of Howls. Todos os direitos reservados.</p>
@@ -555,9 +547,9 @@
             settingsPanel.style.display = 'none';
             abilitiesPanel.style.display = 'none';
 
-            // Garantir que o pause esteja fechado
-            const pm = document.getElementById('pause-menu');
-            if (pm) pm.style.display = 'none';
+            // Garantir que o pause esteja fechado (ID atualizado)
+            const po = document.getElementById('pause-overlay');
+            if (po) po.style.display = 'none';
 
             mainMenu.style.opacity = '0';
             setTimeout(() => {
@@ -585,7 +577,7 @@
         document.getElementById('close-settings-btn').onclick = () => {
             GameAudio.playUIClick();
             if (window.closeSettings) {
-                closeSettings();
+                window.closeSettings();
             } else {
                 settingsPanel.style.display = 'none';
             }

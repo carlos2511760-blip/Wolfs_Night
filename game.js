@@ -647,139 +647,106 @@ function setupOverlayStyles() {
         #game-stats-display { position: fixed; top: 20px; left: 20px; font-family: 'Arial', sans-serif; font-size: 18px; color: #fff; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border: 1px solid #444; z-index: 9000; min-width: 250px; display: none; }
         #interaction-label { position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 9000; border: 1px solid #b30000; }
         
-        /* Menu de Pause Reconstruído - Aesthetics Premium */
-        #pause-menu { 
+        #pause-overlay { 
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: radial-gradient(circle, rgba(20,0,0,0.85) 0%, rgba(0,0,0,0.98) 100%); 
+            background: radial-gradient(circle, rgba(20,0,0,0.4) 0%, rgba(0,0,0,0.95) 100%); 
             display: none; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 100000; backdrop-filter: blur(12px) grayscale(0.5); 
+            z-index: 100000; backdrop-filter: blur(15px) grayscale(0.8); 
         }
-        .pause-card { 
-            background: rgba(5, 5, 5, 0.95); padding: 60px; border-radius: 2px; 
-            border-left: 8px solid #b30000; border-right: 1px solid #333;
-            text-align: center; box-shadow: 0 0 100px rgba(0, 0, 0, 1), 0 0 20px rgba(179,0,0,0.2); 
-            min-width: 450px; position: relative; z-index: 100001; 
+        .pause-box { 
+            background: rgba(10, 10, 10, 0.95); padding: 50px; border-left: 10px solid #b30000;
+            text-align: center; box-shadow: 0 0 100px #000; min-width: 450px;
         }
-        .pause-title { 
-            font-family: 'Creepster', cursive; font-size: 5rem; color: #ff0000; 
-            margin-bottom: 50px; text-shadow: 3px 3px 0px #300, 0 0 30px rgba(255,0,0,0.4); 
-            letter-spacing: 5px;
+        .pause-title { font-family: 'Creepster', cursive; font-size: 5rem; color: #ff0000; margin-bottom: 30px; }
+        .pause-opt { 
+            display: block; width: 100%; padding: 20px; margin: 10px 0; 
+            background: #111; border: 1px solid #444; color: #fff; cursor: pointer; 
+            font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 2px;
         }
-        .pause-btn { 
-            display: block; width: 100%; padding: 20px; margin: 12px 0; 
-            background: linear-gradient(90deg, rgba(20,20,20,1) 0%, rgba(30,30,30,1) 100%); 
-            border: 1px solid #444; color: #fff; cursor: pointer; 
-            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; 
-            text-transform: uppercase; letter-spacing: 3px; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative; overflow: hidden;
-        }
-        .pause-btn:hover { 
-            background: #b30000; border-color: #ff0000; color: #fff; transform: scale(1.02); 
-            box-shadow: 0 0 40px rgba(179,0,0,0.6); z-index: 2;
-        }
-        .pause-btn.primary { background: #b30000; border-color: #ff0000; }
+        .pause-opt:hover { background: #b30000; transform: scale(1.02); }
         
         #settings-panel, #abilities-panel { 
-            z-index: 120000 !important; 
-            background: rgba(5,5,5,0.98) !important;
-            border-left: 8px solid #b30000 !important;
-            box-shadow: 0 0 100px #000 !important;
+            z-index: 100005 !important; 
+            background: rgba(10,10,10,0.98) !important;
+            border-left: 10px solid #b30000 !important;
         }
-        #loading-screen { z-index: 110000 !important; pointer-events: none; }
-        #stamina-bar { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 400px; height: 12px; background: rgba(0,0,0,0.8); border: 1px solid #333; border-radius: 0; overflow: hidden; z-index: 10000; }
-        #stamina-fill { width: 100%; height: 100%; background: #b30000; box-shadow: inset 0 0 10px #000; }
+        #stamina-bar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 400px; height: 15px; background: rgba(0,0,0,0.8); border: 1px solid #333; z-index: 9000; }
+        #stamina-fill { width: 100%; height: 100%; background: #b30000; transition: width 0.1s; display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold; }
     `;
     document.head.appendChild(s);
+
     const sn = document.createElement('div'); sn.id = 'stamina-bar'; sn.innerHTML = '<div id="stamina-fill"></div>'; document.body.appendChild(sn);
     const b = document.createElement('div'); b.id = 'blood-overlay'; document.body.appendChild(b);
     const t = document.createElement('div'); t.id = 'top-timer'; document.body.appendChild(t);
     const g = document.createElement('div'); g.id = 'game-stats-display'; document.body.appendChild(g);
     const i = document.createElement('div'); i.id = 'interaction-label'; document.body.appendChild(i);
     const p = document.createElement('div'); p.id = 'backpack-ui'; document.body.appendChild(p);
-    const pause = document.createElement('div'); pause.id = 'pause-menu';
-    pause.innerHTML = `
-        <div class="pause-card">
+
+    const po = document.createElement('div'); po.id = 'pause-overlay';
+    po.innerHTML = `
+        <div class="pause-box" id="pause-main-card">
             <div class="pause-title">PAUSADO</div>
-            <button class="pause-btn primary" onclick="togglePause()">CONTINUAR</button>
-            <button class="pause-btn" onclick="openPauseSettings()">CONFIGURAÇÕES</button>
-            <button class="pause-btn" onclick="restartNight()">REINICIAR NOITE</button>
-            <button class="pause-btn" onclick="location.reload()">VOLTAR AO MENU</button>
+            <button class="pause-opt" onclick="window.togglePause()">CONTINUAR</button>
+            <button class="pause-opt" onclick="window.openPauseSettings()">CONFIGURAÇÕES</button>
+            <button class="pause-opt" onclick="location.reload()">VOLTAR AO MENU</button>
         </div>
     `;
-    document.body.appendChild(pause);
+    document.body.appendChild(po);
 }
-
-window.restartNight = function () {
-    // Lógica para reiniciar a noite atual
-    if (confirm("Deseja reiniciar a noite atual?")) {
-        window.isPaused = false;
-        document.getElementById('pause-menu').style.display = 'none';
-        resetPlayerStatus(true);
-        // Recriar o cenário ou apenas reposicionar? reload é mais seguro para "resetar" tudo limpo
-        location.reload();
-    }
-};
 
 window.togglePause = function () {
     if (!window.gameStarted) return;
-
-    // Inverte o estado
     window.isPaused = !window.isPaused;
 
-    // Sincroniza elementos DOM
-    const pm = document.getElementById('pause-menu');
-    const pmCard = pm?.querySelector('.pause-card');
+    const overlay = document.getElementById('pause-overlay');
+    const card = document.getElementById('pause-main-card');
     const sp = document.getElementById('settings-panel');
     const ab = document.getElementById('abilities-panel');
     const canvas = document.getElementById('game-canvas');
 
     if (window.isPaused) {
-        if (pm) pm.style.display = 'flex';
-        if (pmCard) pmCard.style.display = 'block';
+        if (overlay) overlay.style.display = 'flex';
+        if (card) card.style.display = 'block';
         if (sp) sp.style.display = 'none';
         if (ab) ab.style.display = 'none';
         document.exitPointerLock();
     } else {
-        if (pm) pm.style.display = 'none';
+        if (overlay) overlay.style.display = 'none';
         if (sp) sp.style.display = 'none';
         if (ab) ab.style.display = 'none';
         if (canvas) canvas.requestPointerLock();
     }
-
-    // Forçar atualização do HUD
-    if (typeof updateUI === 'function') updateUI();
+    window.updateUI();
 };
 
 window.openPauseSettings = function () {
-    const pmCard = document.querySelector('.pause-card');
+    const card = document.getElementById('pause-main-card');
     const sp = document.getElementById('settings-panel');
-    if (pmCard) pmCard.style.display = 'none';
+    if (card) card.style.display = 'none';
     if (sp) {
         sp.style.display = 'block';
-        if (window.gameStarted) {
-            window.isPaused = true;
-            updateUI();
-        }
+        window.isPaused = true;
+        window.updateUI();
     }
 };
 
 window.closeSettings = function () {
     const sp = document.getElementById('settings-panel');
-    const pmCard = document.querySelector('.pause-card');
+    const card = document.getElementById('pause-main-card');
+    const overlay = document.getElementById('pause-overlay');
     if (sp) sp.style.display = 'none';
 
-    // Se o jogo está rolando e pausado, volta pro card do pause
-    if (window.gameStarted && window.isPaused) {
-        if (pmCard) pmCard.style.display = 'block';
-    }
-    // Se fechou pelo menu inicial ou se de alguma forma despausou, volta o lock
-    else if (window.gameStarted && !window.isPaused) {
-        const canvas = document.getElementById('game-canvas');
-        if (canvas) canvas.requestPointerLock();
+    if (window.gameStarted) {
+        if (window.isPaused) {
+            if (card) card.style.display = 'block';
+        } else {
+            if (overlay) overlay.style.display = 'none';
+            document.getElementById('game-canvas').requestPointerLock();
+        }
     }
 };
 
-// Cachear referências DOM (evita getElementById 60x/s)
 let _uiTimer, _uiStamina, _uiStats, _uiInteraction, _uiBlood;
 function cacheUIElements() {
     _uiTimer = document.getElementById('top-timer');
@@ -790,76 +757,39 @@ function cacheUIElements() {
 }
 
 function updateUI() {
-    // Esconder HUD se não começou, se está pausado ou no menu
     const isVisible = window.gameStarted && !window.isPaused && gameStats.phase !== "pre-game";
-
     if (!_uiTimer) cacheUIElements();
 
-    // Atualizar visibilidade
-    const hudContainer = [_uiTimer, _uiStamina?.parentElement, _uiStats, document.getElementById('crosshair')];
-    hudContainer.forEach(el => { if (el) el.style.display = isVisible ? 'block' : 'none'; });
+    const hudElements = [_uiTimer, _uiStamina?.parentElement, _uiStats, _uiInteraction, document.getElementById('game-hud'), document.getElementById('crosshair')];
+    hudElements.forEach(el => { if (el) el.style.display = isVisible ? 'block' : 'none'; });
 
     if (!isVisible) return;
-
-    // Atualizar UI pesada a cada 5 frames
     if (_frameCount % 5 !== 0) return;
 
     if (_uiTimer) {
         let t = 0; let label = "";
         if (gameStats.phase === "prep" || gameStats.phase === "pre-game") { t = Math.max(0, gameStats.prepTimer); label = "PREPARAÇÃO"; }
         else if (gameStats.phase === "survival" || gameStats.phase === "transition") { t = Math.max(0, gameStats.survivalTimer); label = "SOBREVIVÊNCIA"; }
-        let mins = Math.floor(t / 60); let secs = Math.floor(t % 60); _uiTimer.innerHTML = `${label}: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        let m = Math.floor(t / 60); let s = Math.floor(t % 60); _uiTimer.innerText = `${label}: ${m}:${s < 10 ? '0' : ''}${s}`;
     }
     if (_uiStamina) {
         _uiStamina.style.width = player.stamina + "%";
-        if (player.staminaCooldown) { let r = Math.ceil(15 - (clock.getElapsedTime() - player.coStartTime)); _uiStamina.style.background = "#ff9900"; _uiStamina.innerHTML = `EXAUSTO ${r}s`; }
-        else { _uiStamina.style.background = "#b30000"; _uiStamina.innerHTML = ""; }
+        if (player.staminaCooldown) {
+            let r = Math.ceil(1.5 - (clock.getElapsedTime() - player.coStartTime));
+            _uiStamina.style.background = "#ff9900"; _uiStamina.innerText = "EXAUSTO";
+        } else { _uiStamina.style.background = "#b30000"; _uiStamina.innerText = ""; }
     }
     if (_uiStats) {
-        const exVal = Math.floor(player.exhaustion);
-        const exColor = exVal > 80 ? "#ff0000" : (exVal > 50 ? "#ffff00" : "#00ff00");
         const hearts = "❤️".repeat(player.lives) + "🖤".repeat(Math.max(0, player.maxLives - player.lives));
         _uiStats.innerHTML = `
-            <div style="font-size:24px; color:#ff0000; margin-bottom:5px;">NOITE ${gameStats.night}/7</div>
-            <div style="color:#ff4444; font-size:18px;">VIDA: ${hearts}</div>
-            <div style="color:#ffcc00; font-weight:bold;">🐺 VIVOS: ${gameStats.wolves.length}</div>
-            <div style="color:#aaa;">🔫 PENTE: ${player.magAmmo} | TOTAL: ${player.totalAmmo}</div>
-            <div style="color:#aaa;">🪤 ARMADILHAS: ${player.traps}</div>
-            <div style="color:#22ff22;">🩹 KITS MÉDICOS: ${player.medkits}</div>
-            <div style="color:#aaa;">🔦 BATERIA: ${Math.max(0, Math.floor((player.flashlightBattery / 250) * 100))}%</div>
-            <div style="margin-top:8px;">
-                <div style="font-size:12px; color:#eee;">CANSAÇO:</div>
-                <div style="width:100%; height:8px; background:#222; border-radius:4px; overflow:hidden;">
-                    <div style="width:${exVal}%; height:100%; background:${exColor}; transition:width 0.3s;"></div>
-                </div>
-            </div>
-            ${player.isParalyzed ? '<div style="color:#ffff00; font-weight:bold; margin-top:5px;">⚡ PARALISADO!</div>' : ''}
-            ${player.isSlowed ? '<div style="color:#ff9900; font-weight:bold; margin-top:5px;">🌀 LENTO!</div>' : ''}
+            <div style="font-size:22px; color:#ff0000; margin-bottom:5px;">NOITE ${gameStats.night}/7</div>
+            <div style="color:#ff4444;">VIDA: ${hearts}</div>
+            <div style="color:#ffcc00;">LOBOS: ${gameStats.wolves.length}</div>
+            <div style="color:#aaa; font-size:14px;">MUNIÇÃO: ${player.magAmmo} / ${player.totalAmmo}</div>
         `;
     }
-
-    if (_uiInteraction) {
-        raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-        const hits = raycaster.intersectObjects(interactiveObjects);
-        if (hits.length > 0 && hits[0].distance < 7) {
-            let name = "OBJETO";
-            const o = hits[0].object;
-            if (o.userData.type === 'loot') {
-                if (o.userData.subType === 'ammo') name = "CAIXA DE MUNIÇÃO";
-                else if (o.userData.subType === 'trap') name = "ARMADILHA DE URSO";
-                else if (o.userData.subType === 'medkit') name = "MALETA MÉDICA";
-            }
-            else if (o.parent && o.parent.userData && o.parent.userData.type === 'door') name = "PORTA DE MADEIRA";
-            _uiInteraction.innerText = `[CLIQUE] COLETAR/USAR: ${name}`;
-            _uiInteraction.style.opacity = "1";
-        } else { _uiInteraction.style.opacity = "0"; }
-    }
-
     if (_uiBlood) {
-        if (player.lives === 2) _uiBlood.style.opacity = "0.4";
-        else if (player.lives === 1) _uiBlood.style.opacity = "0.8";
-        else if (player.lives <= 0) _uiBlood.style.opacity = "1";
-        else _uiBlood.style.opacity = "0";
+        _uiBlood.style.opacity = player.lives === 1 ? "0.7" : (player.lives <= 0 ? "1.0" : "0");
     }
 }
 
@@ -872,7 +802,7 @@ function checkCollision(pX, pZ, radius = 0.55) {
 
     for (let gx = minGridX; gx <= maxGridX; gx++) {
         for (let gz = minGridZ; gz <= maxGridZ; gz++) {
-            const key = `${gx}_${gz}`;
+            const key = `${gx}_${gz} `;
             const cell = collisionGrid.get(key);
             if (!cell) continue;
             for (let c of cell) {
@@ -1085,7 +1015,7 @@ function updateInventoryUI() {
     const inv = document.getElementById('backpack-ui');
     if (!inv) return;
     inv.innerHTML = `
-        <h2 style="color:#ff0000; font-family:'Creepster'">MOCHILA DE SOBREVIVÊNCIA</h2>
+    < h2 style = "color:#ff0000; font-family:'Creepster'" > MOCHILA DE SOBREVIVÊNCIA</h2 >
         <div style="margin:20px 0; display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;">
             <div class="inv-item">🔫 Balas: <strong>${player.totalAmmo}</strong></div>
             <div class="inv-item">🩹 Medkits: <strong>${player.medkits}</strong></div>
@@ -1094,7 +1024,7 @@ function updateInventoryUI() {
         </div>
         <p style="font-size:12px; color:#888;">Pressione [Z] para fechar</p>
         <button onclick="toggleInventory()" style="margin-top:15px; background:#b30000; color:white; border:none; padding:10px 20px; cursor:pointer; width:100%;">VOLTAR AO JOGO</button>
-    `;
+`;
 }
 window.toggleInventory = toggleInventory;
 function createRadialWall(start, end, worldPos, isDoor = false, doorObj = null) {
@@ -1392,7 +1322,7 @@ function interact() {
             else if (type === "trap") player.traps += o.userData.amount;
             else if (type === "medkit") player.medkits += 1;
 
-            showCentralMessage(`COLETOU: ${type.toUpperCase()}`, 2000);
+            showCentralMessage(`COLETOU: ${type.toUpperCase()} `, 2000);
             o.parent.remove(o);
             interactiveObjects = interactiveObjects.filter(x => x !== o);
             return true;
