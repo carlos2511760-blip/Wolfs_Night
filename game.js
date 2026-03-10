@@ -644,27 +644,47 @@ function setupOverlayStyles() {
         #game-stats-display { position: fixed; top: 20px; left: 20px; font-family: 'Arial', sans-serif; font-size: 18px; color: #fff; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border: 1px solid #444; z-index: 9000; min-width: 250px; display: none; }
         #interaction-label { position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 9000; border: 1px solid #b30000; }
         
-        /* Menu de Pause e Configurações - Z-INDEX MÁXIMO */
-        #pause-menu { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; backdrop-filter: blur(10px); }
-        .pause-card { background: rgba(10, 10, 10, 0.98); padding: 50px; border-radius: 20px; border: 3px solid #b30000; text-align: center; box-shadow: 0 0 100px rgba(0, 0, 0, 1); min-width: 350px; position: relative; z-index: 100000; }
-        .pause-title { font-family: 'Creepster', cursive; font-size: 4.5rem; color: #b30000; margin-bottom: 40px; text-shadow: 0 0 20px rgba(179,0,0,0.7); }
-        .pause-btn { display: block; width: 100%; padding: 18px; margin: 15px 0; background: rgba(20,20,20,0.8); border: 1px solid #444; color: white; cursor: pointer; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; border-radius: 8px; transition: 0.3s; }
-        .pause-btn:hover { background: #b30000; border-color: #b30000; transform: scale(1.05); box-shadow: 0 0 20px rgba(179,0,0,0.5); }
-        .pause-btn.primary { background: #b30000; border: none; }
-        
-        #settings-panel { z-index: 110000 !important; }
-        #abilities-panel { z-index: 110000 !important; }
-        #main-menu { z-index: 1000 !important; } 
-        #loading-screen { z-index: 999999 !important; pointer-events: none; }
-        #backpack-ui { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; padding: 25px; background: rgba(10,10,10,0.95); border: 2px solid #ff0000; border-radius: 15px; display: none; z-index: 11000; color: #fff; text-align: center; font-family: 'Courier New', monospace; box-shadow: 0 0 30px #000; }
-        #blood-overlay { 
+        /* Menu de Pause Reconstruído - Aesthetics Premium */
+        #pause-menu { 
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            pointer-events: none; z-index: 9500; opacity: 0; transition: opacity 1.5s ease;
-            background: radial-gradient(circle, transparent 40%, rgba(139, 0, 0, 0.9) 100%);
-            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+            background: radial-gradient(circle, rgba(20,0,0,0.85) 0%, rgba(0,0,0,0.98) 100%); 
+            display: none; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 100000; backdrop-filter: blur(12px) grayscale(0.5); 
         }
-        #stamina-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 300px; height: 15px; background: rgba(0,0,0,0.7); border: 2px solid #555; border-radius: 10px; overflow: hidden; z-index: 10000; }
-        #stamina-fill { width: 100%; height: 100%; background: #b30000; transition: width 0.2s; display: flex; align-items: center; justify-content: center; font-family: Arial; font-weight: bold; font-size: 10px; color: white; }
+        .pause-card { 
+            background: rgba(5, 5, 5, 0.95); padding: 60px; border-radius: 2px; 
+            border-left: 8px solid #b30000; border-right: 1px solid #333;
+            text-align: center; box-shadow: 0 0 100px rgba(0, 0, 0, 1), 0 0 20px rgba(179,0,0,0.2); 
+            min-width: 450px; position: relative; z-index: 100001; 
+        }
+        .pause-title { 
+            font-family: 'Creepster', cursive; font-size: 5rem; color: #ff0000; 
+            margin-bottom: 50px; text-shadow: 3px 3px 0px #300, 0 0 30px rgba(255,0,0,0.4); 
+            letter-spacing: 5px;
+        }
+        .pause-btn { 
+            display: block; width: 100%; padding: 20px; margin: 12px 0; 
+            background: linear-gradient(90deg, rgba(20,20,20,1) 0%, rgba(30,30,30,1) 100%); 
+            border: 1px solid #444; color: #fff; cursor: pointer; 
+            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; 
+            text-transform: uppercase; letter-spacing: 3px; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .pause-btn:hover { 
+            background: #b30000; border-color: #ff0000; color: #fff; transform: scale(1.02); 
+            box-shadow: 0 0 40px rgba(179,0,0,0.6); z-index: 2;
+        }
+        .pause-btn.primary { background: #b30000; border-color: #ff0000; }
+        
+        #settings-panel, #abilities-panel { 
+            z-index: 120000 !important; 
+            background: rgba(5,5,5,0.98) !important;
+            border-left: 8px solid #b30000 !important;
+            box-shadow: 0 0 100px #000 !important;
+        }
+        #loading-screen { z-index: 110000 !important; pointer-events: none; }
+        #stamina-bar { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 400px; height: 12px; background: rgba(0,0,0,0.8); border: 1px solid #333; border-radius: 0; overflow: hidden; z-index: 10000; }
+        #stamina-fill { width: 100%; height: 100%; background: #b30000; box-shadow: inset 0 0 10px #000; }
     `;
     document.head.appendChild(s);
     const sn = document.createElement('div'); sn.id = 'stamina-bar'; sn.innerHTML = '<div id="stamina-fill"></div>'; document.body.appendChild(sn);
@@ -698,40 +718,38 @@ window.restartNight = function () {
 };
 
 window.togglePause = function () {
-    window.isPaused = !window.isPaused;
     const pm = document.getElementById('pause-menu');
-    const pmCard = document.querySelector('.pause-card');
+    const pmCard = pm?.querySelector('.pause-card');
     const sp = document.getElementById('settings-panel');
+    const ab = document.getElementById('abilities-panel');
     const canvas = document.getElementById('game-canvas');
 
-    if (pm) pm.style.display = window.isPaused ? 'flex' : 'none';
-    if (pmCard) pmCard.style.display = 'block'; // Garante que o card volte a aparecer
+    window.isPaused = !window.isPaused;
 
-    // Atualiza a visibilidade do HUD imediatamente
-    updateUI();
-
-    if (!window.isPaused && canvas) {
+    if (window.isPaused) {
+        if (pm) pm.style.display = 'flex';
+        if (pmCard) pmCard.style.display = 'block';
         if (sp) sp.style.display = 'none';
-        canvas.requestPointerLock();
-    } else if (window.isPaused) {
+        if (ab) ab.style.display = 'none';
         document.exitPointerLock();
+    } else {
+        if (pm) pm.style.display = 'none';
+        if (sp) sp.style.display = 'none';
+        if (ab) ab.style.display = 'none';
+        if (canvas && window.gameStarted) canvas.requestPointerLock();
     }
+
+    updateUI();
 };
 
 window.openPauseSettings = function () {
     const pmCard = document.querySelector('.pause-card');
-    if (pmCard) pmCard.style.display = 'none';
     const sp = document.getElementById('settings-panel');
+    if (pmCard) pmCard.style.display = 'none';
     if (sp) {
         sp.style.display = 'block';
-        const closeBtn = document.getElementById('close-settings-btn');
-        if (closeBtn) {
-            const oldClick = closeBtn.onclick;
-            closeBtn.onclick = () => {
-                if (oldClick) oldClick();
-                if (window.isPaused && pmCard) pmCard.style.display = 'block';
-            };
-        }
+        window.isPaused = true;
+        updateUI();
     }
 };
 
@@ -1201,17 +1219,22 @@ function setupControls(canvas) {
         if (e.code === 'Escape') {
             const sp = document.getElementById('settings-panel');
             const ab = document.getElementById('abilities-panel');
-            // Se algum painel estiver aberto, fecha ele primeiro antes de despausar
+            const pmCard = document.querySelector('.pause-card');
+
+            // Ordem de prioridade: fechar painéis internos primeiro
             if (sp && sp.style.display === 'block') {
                 sp.style.display = 'none';
-                const pmCard = document.querySelector('.pause-card');
-                if (window.isPaused && pmCard) pmCard.style.display = 'block';
+                if (pmCard) pmCard.style.display = 'block';
                 return;
             }
             if (ab && ab.style.display === 'block') {
                 ab.style.display = 'none';
+                if (window.isPaused && pmCard) pmCard.style.display = 'block';
+                else if (!window.gameStarted) { /* nada no menu inicial */ }
+                else togglePause();
                 return;
             }
+
             togglePause();
             return;
         }
