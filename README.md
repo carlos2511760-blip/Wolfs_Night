@@ -7,8 +7,8 @@
 ## 🕹️ Mecânicas Principais
 
 ### Sistema de Noites e Progressão
-- **Preparação:** Cada noite começa com 3 minutos de entardecer para exploração e coleta de recursos.
-- **Objetivo:** Sobreviver por 10 minutos ou eliminar todos os lobisomens.
+- **Preparação:** Cada noite começa com 1:30 minuto de entardecer para exploração e coleta de recursos.
+- **Objetivo:** Sobreviver por 5 minutos ou eliminar todos os lobisomens.
 - **Dificuldade:** 
     - Noite 1: 5 lobisomens (5 HP cada).
     - Progressão: +2 lobisomens e +2 HP por noite.

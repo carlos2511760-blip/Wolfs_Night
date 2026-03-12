@@ -100,8 +100,8 @@ window.player = player;
 
 let gameStats = {
     phase: "pre-game",
-    prepTimer: 180,
-    survivalTimer: 600,
+    prepTimer: 90,
+    survivalTimer: 300,
     night: 1,
     wolves: [],
     doors: [],
@@ -849,6 +849,7 @@ function updateUI() {
             <div style="color:#ff4444;">VIDA: ${hearts}</div>
             <div style="color:#ffcc00;">LOBOS: ${gameStats.wolves.length}</div>
             <div style="color:#aaa; font-size:14px;">MUNIÇÃO: ${player.magAmmo} / ${player.totalAmmo}</div>
+            <div style="color:#44ff44; font-size:14px;">MEDKITS: ${player.medkits} | TRAPS: ${player.traps}</div>
         `;
     }
     if (_uiBlood) {
@@ -969,7 +970,7 @@ function animate() {
         }
         else if (gameStats.phase === "prep") {
             gameStats.prepTimer -= d;
-            let p = 1 - (gameStats.prepTimer / 180);
+            let p = 1 - (gameStats.prepTimer / 90);
             updateAtmosphere(p);
             if (gameStats.prepTimer <= 0) {
                 gameStats.phase = "transition";
@@ -1898,8 +1899,8 @@ function skipNight() {
         gameStats.night++;
         resetPlayerStatus(true);
         gameStats.phase = "pre-game";
-        gameStats.prepTimer = 180;
-        gameStats.survivalTimer = 600;
+        gameStats.prepTimer = 90;
+        gameStats.survivalTimer = 300;
         showCheatMessage(`AVANÇOU PARA NOITE ${gameStats.night} [VIDA AUMENTADA]`);
         GameAudio.playHowl();
     }
@@ -2020,8 +2021,8 @@ function openTransitionPhase() {
         gameStats.night++;
         resetPlayerStatus(true);
         gameStats.phase = "pre-game";
-        gameStats.prepTimer = 180;
-        gameStats.survivalTimer = 600;
+        gameStats.prepTimer = 90;
+        gameStats.survivalTimer = 300;
         gameStats.wolves.forEach(w => scene.remove(w));
         gameStats.wolves = [];
         window.isPaused = false;
