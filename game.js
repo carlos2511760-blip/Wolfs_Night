@@ -249,37 +249,49 @@ function init() {
     for (let j = 0; j < 6; j++) instancedLeaves.push(new THREE.InstancedMesh(leafGeo, leafMat, 2500));
 
     const dummy = new THREE.Object3D();
+    let treeCount = 0;
     for (let i = 0; i < 2500; i++) {
         const x = (Math.random() - 0.5) * 5000;
         const z = (Math.random() - 0.5) * 5000;
-        const dist = Math.sqrt(x * x + z * z);
+        const distSq = x * x + z * z;
 
-        if (dist > 35) {
+        if (distSq > 1600) { // Raio de 40 metros livre ao redor do spawn (0,0)
             dummy.position.set(x, 10, z);
             dummy.scale.set(1, 1, 1);
             dummy.updateMatrix();
-            instancedTrunks.setMatrixAt(i, dummy.matrix);
+            instancedTrunks.setMatrixAt(treeCount, dummy.matrix);
 
             for (let j = 0; j < 6; j++) {
                 dummy.position.set(x, 8 + j * 4, z);
                 dummy.scale.set(1 - j * 0.1, 1, 1 - j * 0.1);
                 dummy.updateMatrix();
-                instancedLeaves[j].setMatrixAt(i, dummy.matrix);
+                instancedLeaves[j].setMatrixAt(treeCount, dummy.matrix);
             }
             addToGrid({ x, z, r: 1.2 });
+            treeCount++;
         }
     }
 
+    instancedTrunks.count = treeCount;
     instancedTrunks.instanceMatrix.needsUpdate = true;
-    instancedLeaves.forEach(l => l.instanceMatrix.needsUpdate = true);
+    instancedLeaves.forEach(l => {
+        l.count = treeCount;
+        l.instanceMatrix.needsUpdate = true;
+    });
 
     scene.add(instancedTrunks);
     instancedLeaves.forEach(l => scene.add(l));
 
     for (let i = 0; i < 60; i++) {
         const x = (Math.random() - 0.5) * 2000; const z = (Math.random() - 0.5) * 2000;
-        if (Math.sqrt(x * x + z * z) > 35) createCorpse(x, z);
+        if (x * x + z * z > 1600) createCorpse(x, z);
     }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
     setupOvergrownJungle();
     setupControls(canvas);
@@ -399,21 +411,27 @@ function createCabin(x, y, z) {
         const loot = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshBasicMaterial({ visible: false }));
 
         if (lootType === "ammo") {
-            // Caixa de munição detalhada
-            const ammoBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.45, 0.55), gameMaterials.ammo);
-            ammoBox.position.y = -0.3;
+            // Conjunto de balas individuais (conforme solicitado e para melhor visual)
+            const ammoGroup = new THREE.Group();
+            const bulletColor = 0xccaa22; // Cor dourada/latão
+            const bulletMat = new THREE.MeshStandardMaterial({ color: bulletColor, metalness: 0.8, roughness: 0.2 });
+            const tipMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.5 }); // Ponta de chumbo
 
-            // Tampa com travas
-            const lid = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.1, 0.57), new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8 }));
-            lid.position.y = 0.23;
-            ammoBox.add(lid);
+            for (let b = 0; b < 5; b++) {
+                const bullet = new THREE.Group();
+                const casing = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.25, 8), bulletMat);
+                const tip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 8), tipMat);
+                tip.position.y = 0.18;
+                bullet.add(casing, tip);
 
-            // Alça superior
-            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0x000000 }));
-            handle.position.y = 0.29;
-            ammoBox.add(handle);
-
-            loot.add(ammoBox);
+                // Dispor as balas em um pequeno monte ou círculo
+                const angle = (b / 5) * Math.PI * 2;
+                bullet.position.set(Math.cos(angle) * 0.15, -0.4, Math.sin(angle) * 0.15);
+                bullet.rotation.x = Math.random() * 0.2;
+                bullet.rotation.z = Math.random() * 0.2;
+                ammoGroup.add(bullet);
+            }
+            loot.add(ammoGroup);
         }
         else if (lootType === "medkit") {
             // Maleta médica robusta
@@ -702,9 +720,11 @@ function setupOverlayStyles() {
     if (ab) po.appendChild(ab);
 }
 
-window.togglePause = function () {
+window.togglePause = function (forceState = null) {
     if (!window.gameStarted) return;
-    window.isPaused = !window.isPaused;
+    
+    if (forceState !== null) window.isPaused = forceState;
+    else window.isPaused = !window.isPaused;
 
     const overlay = document.getElementById('pause-overlay');
     const card = document.getElementById('pause-main-card');
@@ -713,16 +733,23 @@ window.togglePause = function () {
     const canvas = document.getElementById('game-canvas');
 
     if (window.isPaused) {
-        if (overlay) overlay.style.display = 'flex';
+        if (overlay) {
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto'; // Garantir que é clicável
+        }
         if (card) card.style.display = 'block';
         if (sp) sp.style.display = 'none';
         if (ab) ab.style.display = 'none';
-        document.exitPointerLock();
+        if (document.pointerLockElement === canvas) document.exitPointerLock();
     } else {
-        if (overlay) overlay.style.display = 'none';
+        if (overlay) {
+            overlay.style.display = 'none';
+            overlay.style.pointerEvents = 'none';
+        }
         if (sp) sp.style.display = 'none';
         if (ab) ab.style.display = 'none';
-        if (canvas) canvas.requestPointerLock();
+        if (canvas && document.pointerLockElement !== canvas) canvas.requestPointerLock();
     }
     window.updateUI();
 };
@@ -838,7 +865,7 @@ function checkCollision(pX, pZ, radius = 0.55) {
 
     for (let gx = minGridX; gx <= maxGridX; gx++) {
         for (let gz = minGridZ; gz <= maxGridZ; gz++) {
-            const key = `${gx}_${gz} `;
+            const key = `${gx}_${gz}`;
             const cell = collisionGrid.get(key);
             if (!cell) continue;
             for (let c of cell) {
@@ -968,14 +995,8 @@ function animate() {
             if (player.canMove) handleWolves(d, Date.now());
             if (gameStats.survivalTimer <= 0 || gameStats.wolves.length === 0) {
                 if (gameStats.night < 7) {
-                    gameStats.night++;
-                    resetPlayerStatus(true);
-                    gameStats.phase = "pre-game";
-                    gameStats.prepTimer = 180;
-                    gameStats.survivalTimer = 600;
-                    gameStats.wolves.forEach(w => scene.remove(w));
-                    gameStats.wolves = [];
-                    showCentralMessage(`NOITE ${gameStats.night - 1} SOBREVIVIDA! ✨ NOVA VIDA MÁXIMA ALCANÇADA!`, 5000);
+                    // Inicia transição em vez de avançar direto
+                    openTransitionPhase();
                 } else {
                     gameStats.phase = "ended";
                     showCentralMessage("VOCÊ SOBREVIVEU ÀS 7 NOITES! 🏆", 15000);
@@ -1051,12 +1072,12 @@ function updateInventoryUI() {
     const inv = document.getElementById('backpack-ui');
     if (!inv) return;
     inv.innerHTML = `
-    < h2 style = "color:#ff0000; font-family:'Creepster'" > MOCHILA DE SOBREVIVÊNCIA</h2 >
+        <h2 style="color:#ff0000; font-family:'Creepster'">MOCHILA DE SOBREVIVÊNCIA</h2>
         <div style="margin:20px 0; display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;">
             <div class="inv-item">🔫 Balas: <strong>${player.totalAmmo}</strong></div>
             <div class="inv-item">🩹 Medkits: <strong>${player.medkits}</strong></div>
             <div class="inv-item">🪤 Traps: <strong>${player.traps}</strong></div>
-            <div class="inv-item">🔦 Bateria: <strong>${Math.floor(player.flashlightBattery / 2.5)}%</strong></div>
+            <div class="inv-item">General Volume: <strong>${Math.floor(GameAudio.masterVolume * 100)}%</strong></div>
         </div>
         <p style="font-size:12px; color:#888;">Pressione [Z] para fechar</p>
         <button onclick="toggleInventory()" style="margin-top:15px; background:#b30000; color:white; border:none; padding:10px 20px; cursor:pointer; width:100%;">VOLTAR AO JOGO</button>
@@ -1078,29 +1099,28 @@ function createRadialWall(start, end, worldPos, isDoor = false, doorObj = null) 
 }
 function setupOvergrownJungle() {
     const dummy = new THREE.Object3D();
-    // Grama melhorada: agora são lâminas mais naturais
+    const totalGrass = 30000; // Reduzido levemente para maior fluidez
     const grassMesh = new THREE.InstancedMesh(
         new THREE.CylinderGeometry(0, 0.4, 2.5, 4),
         new THREE.MeshStandardMaterial({ color: 0x141814, roughness: 1 }),
-        40000
+        totalGrass
     );
     let count = 0;
-    for (let i = 0; i < 40000; i++) {
-        const x = (Math.random() - 0.5) * 4000;
-        const z = (Math.random() - 0.5) * 4000;
-        if (Math.sqrt(x * x + (z - 30) * (z - 30)) < 40) continue;
+    for (let i = 0; i < totalGrass; i++) {
+        const x = (Math.random() - 0.5) * 4500;
+        const z = (Math.random() - 0.5) * 4500;
+        if (x * x + z * z < 900) continue; // Raio de 30m livre de grama no spawn
 
         dummy.position.set(x, 1.0, z);
         dummy.rotation.y = Math.random() * Math.PI;
         dummy.scale.set(0.5 + Math.random(), 0.7 + Math.random() * 1.5, 0.5 + Math.random());
         dummy.updateMatrix();
 
-        // Variação de cor sutil
         const greenVar = 0.5 + Math.random() * 0.5;
         grassMesh.setColorAt(count, new THREE.Color(0.1, 0.3 * greenVar, 0.1));
-
         grassMesh.setMatrixAt(count++, dummy.matrix);
     }
+    grassMesh.count = count;
     grassMesh.instanceColor.needsUpdate = true;
     scene.add(grassMesh);
 }
@@ -1265,21 +1285,27 @@ function setupControls(canvas) {
     });
 
     document.addEventListener('pointerlockchange', () => {
-        player.canMove = (document.pointerLockElement === canvas);
+        const isLocked = (document.pointerLockElement === canvas);
+        player.canMove = isLocked;
+        
         const ls = document.getElementById('loading-screen');
         if (ls) {
-            // Esconder tela de carregamento se o jogo começou
             ls.style.display = (window.gameStarted) ? 'none' : 'flex';
             if (window.gameStarted) ls.style.visibility = 'hidden';
         }
 
-        // Se perdeu o lock e a mochila não está aberta, pausa a mira
-        if (!player.canMove && !player.inventoryOpen) {
+        // --- CORREÇÃO DO PAUSE: Se perdeu o lock e não foi por menus específicos, força o menu de pause ---
+        if (window.gameStarted && !isLocked && !player.inventoryOpen && gameStats.phase !== "transition_menu" && gameStats.phase !== "ended") {
+            if (!window.isPaused) {
+                window.togglePause(true);
+            }
+        }
+
+        if (!isLocked && !player.inventoryOpen) {
             player.isAiming = false;
         }
 
-        // Se pegou o controle, garante que a fase de preparação comece
-        if (player.canMove && gameStats.phase === "pre-game") {
+        if (isLocked && gameStats.phase === "pre-game") {
             window.gameStarted = true;
         }
     });
@@ -1353,11 +1379,14 @@ function interact() {
         const o = hits[0].object;
         if (o.userData && o.userData.type === "loot") {
             const type = o.userData.subType;
+            const names = { ammo: "munição", trap: "armadilha", medkit: "kit médico" };
+            const itemName = names[type] || "um item";
+
             if (type === "ammo") player.totalAmmo += o.userData.amount;
             else if (type === "trap") player.traps += o.userData.amount;
             else if (type === "medkit") player.medkits += 1;
 
-            showCentralMessage(`COLETOU: ${type.toUpperCase()} `, 2000);
+            showCentralMessage(`Você coletou ${itemName}`, 2000);
             o.parent.remove(o);
             interactiveObjects = interactiveObjects.filter(x => x !== o);
             return true;
@@ -1918,6 +1947,98 @@ function updatePlayerVisibility() {
     // A arma só some no modo de voo
     if (player.weaponModel) {
         player.weaponModel.visible = !window.isFlying;
+    }
+}
+
+// --- SISTEMA DE TRANSIÇÃO (ESCOLHER 3 ITENS) ---
+let transitionSelection = [];
+function openTransitionPhase() {
+    gameStats.phase = "transition_menu";
+    window.isPaused = true;
+    document.exitPointerLock();
+
+    const panel = document.getElementById('transition-panel');
+    const container = document.getElementById('transition-items');
+    if (!panel || !container) return;
+
+    panel.style.display = 'block';
+    container.innerHTML = "";
+    transitionSelection = [];
+    updateTransitionSelectionUI();
+
+    let items = [];
+    // Balas em packs de 15
+    const ammoPacks = Math.ceil(player.totalAmmo / 15);
+    for (let i = 0; i < ammoPacks; i++) items.push({ type: 'ammo', label: 'Pack de Munição (15)', value: 15 });
+    // Medkits individuais
+    for (let i = 0; i < player.medkits; i++) items.push({ type: 'medkit', label: 'Kit Médico', value: 1 });
+    // Traps individuais
+    for (let i = 0; i < player.traps; i++) items.push({ type: 'trap', label: 'Armadilha Peluda', value: 1 });
+
+    if (items.length === 0) {
+        container.innerHTML = "<p style='color:#666'>Nada para levar...</p>";
+        const btn = document.getElementById('confirm-transition-btn');
+        btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer";
+    }
+
+    items.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'transition-item-row';
+        row.innerHTML = `<span>${item.type === 'ammo' ? '🔫' : (item.type === 'medkit' ? '🩹' : '🪤')} ${item.label}</span>`;
+        row.onclick = () => {
+            if (row.classList.contains('selected')) {
+                row.classList.remove('selected');
+                transitionSelection = transitionSelection.filter(id => id !== index);
+            } else if (transitionSelection.length < 3) {
+                row.classList.add('selected');
+                transitionSelection.push(index);
+            }
+            updateTransitionSelectionUI();
+        };
+        row.userData = item;
+        container.appendChild(row);
+    });
+
+    document.getElementById('confirm-transition-btn').onclick = () => {
+        // Coleta itens escolhidos
+        let newAmmo = 0, newMed = 0, newTraps = 0;
+        const allRows = container.querySelectorAll('.transition-item-row');
+        transitionSelection.forEach(idx => {
+            const it = allRows[idx].userData;
+            if (it.type === 'ammo') newAmmo += it.value;
+            else if (it.type === 'medkit') newMed += it.value;
+            else if (it.type === 'trap') newTraps += it.value;
+        });
+
+        // Aplicar mudanças
+        player.totalAmmo = newAmmo;
+        player.medkits = newMed;
+        player.traps = newTraps;
+
+        // Avançar noite
+        panel.style.display = 'none';
+        gameStats.night++;
+        resetPlayerStatus(true);
+        gameStats.phase = "pre-game";
+        gameStats.prepTimer = 180;
+        gameStats.survivalTimer = 600;
+        gameStats.wolves.forEach(w => scene.remove(w));
+        gameStats.wolves = [];
+        window.isPaused = false;
+        document.getElementById('game-canvas').requestPointerLock();
+        showCentralMessage(`NOITE ${gameStats.night - 1} SOBREVIVIDA! ✨ PREPARE-SE PARA A PRÓXIMA.`, 5000);
+    };
+}
+
+function updateTransitionSelectionUI() {
+    const count = document.getElementById('selection-count');
+    const btn = document.getElementById('confirm-transition-btn');
+    if (count) count.innerText = `Selecionados: ${transitionSelection.length} / 3`;
+    if (btn) {
+        const canConfirm = transitionSelection.length <= 3; // Pode levar de 0 a 3
+        btn.disabled = !canConfirm;
+        btn.style.opacity = canConfirm ? "1" : "0.5";
+        btn.style.cursor = canConfirm ? "pointer" : "not-allowed";
     }
 }
 

@@ -345,6 +345,45 @@
         input[type="range"] {
             accent-color: var(--accent-color);
         }
+
+        /* Painel de Transição */
+        #transition-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 2px solid #ffcc00;
+            padding: 40px;
+            border-radius: 20px;
+            display: none;
+            z-index: 7000;
+            color: white;
+            text-align: center;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 1);
+        }
+
+        .transition-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .transition-item-row.selected {
+            border-color: #ffcc00;
+            background: rgba(255, 204, 0, 0.1);
+        }
+
+        .transition-item-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 
@@ -463,6 +502,14 @@
         </div>
 
         <div class="ability-item">
+            <div class="ability-icon">♻️</div>
+            <div class="ability-info">
+                <h3>RECARREGAR <span class="key-badge">R</span></h3>
+                <p>Mantenha o pente cheio. Leva cerca de 4 segundos para inserir um novo pente de 15 balas.</p>
+            </div>
+        </div>
+
+        <div class="ability-item">
             <div class="ability-icon">🔦</div>
             <div class="ability-info">
                 <h3>LANTERNA <span class="key-badge">L</span></h3>
@@ -509,6 +556,16 @@
             <input type="checkbox" id="cheats-toggle">
         </div>
         <button id="close-settings-btn" class="menu-btn" style="width: 100%; margin-top: 20px;">SALVAR E VOLTAR</button>
+    </div>
+
+    <div id="transition-panel">
+        <h2 style="margin-bottom: 20px; font-size: 2rem; color: #ffcc00;">RECURSOS SOBREVIVENTES</h2>
+        <p style="margin-bottom: 20px; color: #aaa;">Sua carga é pesada. Escolha apenas <strong>3 unidades</strong> para levar à próxima noite.</p>
+        <div id="transition-items" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+            <!-- Items via JS -->
+        </div>
+        <div id="selection-count" style="margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; color: #ffcc00;">Selecionados: 0 / 3</div>
+        <button id="confirm-transition-btn" class="menu-btn primary" style="width: 100%; opacity: 0.5; cursor: not-allowed;" disabled>CONFIRMAR CARGA</button>
     </div>
 
     <section id="game-container"
